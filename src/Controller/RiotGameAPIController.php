@@ -23,6 +23,8 @@ class RiotGameAPIController extends AbstractController
     private $endPointGetUserInfoBySummonerName = "summoner/v4/summoners/by-name/";
     private $endPointGetMatchList = "match/v4/matchlists/by-account/";
     private $endPointGetMatchInfo = "match/v4/matches/";
+    private $endPointGetRankAccount = "league/v4/entries/by-summoner/"; 
+
     private $token = "";
 
     public function __construct(HttpClientInterface $client)
@@ -167,7 +169,53 @@ class RiotGameAPIController extends AbstractController
         $response->setContent($cb->getContent());
         return $response;
     }
+ /**
+     * @Route("/{region}/riot/GetRankAccount/{summonerName}", name="GetRankAccount", methods={"GET"} )
+     */
+    public function getRankAcount($region, $summonerName)
+    {
+        $accountID = $this->encryptedSummonerId($region, $summonerName);
+        $url = $this->https . $region . $this->baseurl . $this->endPointGetRankAccount . $accountID;
+        $cb = $this->client->request(
+            'GET',
+            $url,
+            [
+                'headers' => [
+                    'X-Riot-Token' => $this->token
+                ]
+            ]
+        );
+        $rankAccount = json_decode($cb->getContent(), true);
+        $result = $rankAccount;
+        // var_dump($result);
 
+
+        $response = new JsonResponse();
+        $response->setContent(json_encode($result));
+        return $response;
+    }
+    /**
+     * @Route("/{region}/riot/getInfoAcount/{summonerName}", name="getInfoAcount", methods={"GET"} )
+     */
+    public function getInfoAcount($region, $summonerName)
+    {
+        // $accountID = $this->getAccountID($region, $summonerName);
+        $url = $this->https . $region . $this->baseurl . $this->endPointGetUserInfoBySummonerName . $summonerName;
+        $cb = $this->client->request(
+            'GET',
+            $url,
+            [
+                'headers' => [
+                    'X-Riot-Token' => $this->token
+                ]
+            ]
+        );
+        $info = json_decode($cb->getContent(), true);
+        $result = $info;
+        $response = new JsonResponse();
+        $response->setContent(json_encode($result));
+        return $response;
+    }
     private function getAccountID($region, $summonerName) {
         $url = $this->https.$region. $this->baseurl.$this->endPointGetUserInfoBySummonerName.$summonerName;
         $response = $this->client->request(
@@ -181,5 +229,21 @@ class RiotGameAPIController extends AbstractController
         );
         $responseContent =json_decode($response->getContent());
         return $responseContent->accountId;
+    }
+    
+    private function encryptedSummonerId($region, $summonerName) {
+        $url = $this->https.$region. $this->baseurl.$this->endPointGetUserInfoBySummonerName.$summonerName;
+        $response = $this->client->request(
+            'GET',
+            $url,
+            [
+                'headers' => [
+                    'X-Riot-Token' => $this->token
+                ]
+            ]
+        );
+        $responseContent =json_decode($response->getContent());
+
+        return $responseContent->id;
     }
 }
